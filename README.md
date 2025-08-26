@@ -1,6 +1,7 @@
 # Booky - The Multi Agentic Appointment Booking System
 
 Booky is an intelligent, multi-agent AI-powered appointment booking system designed to streamline scheduling through a conversational interface. It leverages advanced AI models to understand user intent, check availability, book appointments, update records, and send confirmation emails—automating the entire appointment management process.
+<img width="1024" height="1024" alt="booky image" src="https://github.com/user-attachments/assets/e344b1b3-4436-4c80-a73b-09907c98784f" />
 
 ---
 
