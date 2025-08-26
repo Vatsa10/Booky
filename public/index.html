@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment Booking Bot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        #chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        #chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div id="chat-container" class="max-w-2xl mx-auto bg-white shadow-lg rounded-lg">
+        <div class="bg-blue-600 text-white p-4 rounded-t-lg">
+            <h1 class="text-2xl font-bold">Booking Assistant</h1>
+            <p class="text-sm">I can help you book an appointment. How can I help you today?</p>
+        </div>
+
+        <div id="chat-messages" class="p-6 space-y-4">
+            <!-- Chat messages will be appended here -->
+        </div>
+        
+        <div id="loading-indicator" class="px-6 py-2 text-gray-500 italic hidden">
+            <span>Assistant is typing...</span>
+        </div>
+
+        <div class="p-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
+            <form id="chat-form" class="flex items-center space-x-3">
+                <input type="text" id="message-input" placeholder="Type your message..."
+                       class="flex-grow p-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                <button type="submit"
+                        class="bg-blue-600 text-white rounded-full p-3 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-send"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const chatForm = document.getElementById('chat-form');
+        const messageInput = document.getElementById('message-input');
+        const chatMessages = document.getElementById('chat-messages');
+        const loadingIndicator = document.getElementById('loading-indicator');
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            appendMessage(message, 'user');
+            messageInput.value = '';
+            loadingIndicator.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                appendMessage(data.reply, 'bot');
+
+            } catch (error) {
+                console.error('Error:', error);
+                appendMessage('Sorry, I encountered an error. Please try again.', 'bot');
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        });
+
+        function appendMessage(message, sender) {
+            const messageWrapper = document.createElement('div');
+            const messageElement = document.createElement('div');
+            
+            messageWrapper.classList.add('flex', 'items-end', 'space-x-2');
+            messageElement.classList.add('px-4', 'py-2', 'rounded-lg', 'max-w-lg');
+
+            if (sender === 'user') {
+                messageWrapper.classList.add('justify-end');
+                messageElement.classList.add('bg-blue-600', 'text-white', 'rounded-br-none');
+            } else {
+                messageWrapper.classList.add('justify-start');
+                messageElement.classList.add('bg-gray-200', 'text-gray-800', 'rounded-bl-none');
+            }
+            
+            messageElement.textContent = message;
+            messageWrapper.appendChild(messageElement);
+            chatMessages.appendChild(messageWrapper);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    </script>
+</body>
+</html>
