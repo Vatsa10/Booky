@@ -17,6 +17,8 @@ from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from dotenv import load_dotenv
 import sys
+import base64
+import json
 
 load_dotenv()
 
@@ -81,25 +83,29 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 SPREADSHEET_ID = os.getenv('GOOGLE_SPREADSHEET_ID')
 
 creds = None
-# Option 1: JSON path (local dev)
+
+# Option 1: Local dev (use JSON file)
 KEY_FILE_LOCATION = os.getenv('GOOGLE_SHEETS_CREDENTIALS')
 if KEY_FILE_LOCATION and os.path.exists(KEY_FILE_LOCATION):
     creds = Credentials.from_service_account_file(KEY_FILE_LOCATION, scopes=SCOPES)
 
-# Option 2: JSON string in env (cloud deploy)
+# Option 2: Base64 encoded creds (Render / cloud deploy)
 if creds is None:
-    creds_json = os.getenv("GOOGLE_SHEETS_CREDENTIALS_JSON")
-    if creds_json:
-        import json
-        creds_dict = json.loads(creds_json)
-        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+    creds_b64 = os.getenv("GOOGLE_SHEETS_CREDENTIALS_B64")
+    if creds_b64:
+        try:
+            creds_json = base64.b64decode(creds_b64).decode("utf-8")
+            creds_dict = json.loads(creds_json)
+            creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+        except Exception as e:
+            print(f"Failed to parse GOOGLE_SHEETS_CREDENTIALS_B64: {e}")
+            sys.exit(1)
 
 if creds is None:
-    print("ERROR: Google Sheets credentials not found. Please set GOOGLE_SHEETS_CREDENTIALS (file path) or GOOGLE_SHEETS_CREDENTIALS_JSON (full JSON).")
+    print("ERROR: Google Sheets credentials not found. Please set GOOGLE_SHEETS_CREDENTIALS (file path) or GOOGLE_SHEETS_CREDENTIALS_B64 (base64 string).")
     sys.exit(1)
 
 sheets_service = build('sheets', 'v4', credentials=creds)
-
 
 # ---------------------------------
 # 3. WORKER AGENTS (TOOLS)
