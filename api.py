@@ -74,23 +74,32 @@ def initialize_database():
 
     conn.commit()
     conn.close()
-
+    
 # Google Sheets API setup
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-KEY_FILE_LOCATION = os.getenv('GOOGLE_SHEETS_CREDENTIALS')
+
 SPREADSHEET_ID = os.getenv('GOOGLE_SPREADSHEET_ID')
 
-if not KEY_FILE_LOCATION:
-    print("ERROR: GOOGLE_SHEETS_CREDENTIALS path is not set in the .env file.")
-    sys.exit(1)
-if not os.path.exists(KEY_FILE_LOCATION):
-    print(f"ERROR: The Google Sheets credentials file was not found at the specified path.")
-    print(f"Please check the path in your .env file: GOOGLE_SHEETS_CREDENTIALS={KEY_FILE_LOCATION}")
-    print("Hint: Make sure you are using forward slashes (e.g., C:/Users/YourUser/project/credentials.json)")
+creds = None
+# Option 1: JSON path (local dev)
+KEY_FILE_LOCATION = os.getenv('GOOGLE_SHEETS_CREDENTIALS')
+if KEY_FILE_LOCATION and os.path.exists(KEY_FILE_LOCATION):
+    creds = Credentials.from_service_account_file(KEY_FILE_LOCATION, scopes=SCOPES)
+
+# Option 2: JSON string in env (cloud deploy)
+if creds is None:
+    creds_json = os.getenv("GOOGLE_SHEETS_CREDENTIALS_JSON")
+    if creds_json:
+        import json
+        creds_dict = json.loads(creds_json)
+        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+
+if creds is None:
+    print("ERROR: Google Sheets credentials not found. Please set GOOGLE_SHEETS_CREDENTIALS (file path) or GOOGLE_SHEETS_CREDENTIALS_JSON (full JSON).")
     sys.exit(1)
 
-creds = Credentials.from_service_account_file(KEY_FILE_LOCATION, scopes=SCOPES)
 sheets_service = build('sheets', 'v4', credentials=creds)
+
 
 # ---------------------------------
 # 3. WORKER AGENTS (TOOLS)
@@ -273,3 +282,4 @@ def chat():
 if __name__ == '__main__':
     initialize_database()
     app.run(port=5000, debug=True)
+
